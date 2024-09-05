@@ -12,6 +12,7 @@ st.write(
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
 # via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
 
+#openai_api_key = st.text_input("OpenAI API Key", type="password")
 # Fetch the OpenAI API key from Streamlit secrets.
 openai_api_key = st.secrets["api_key"]
 
