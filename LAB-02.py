@@ -27,30 +27,73 @@ else:
         "Upload a document (.txt or .md)", type=("txt", "md")
     )
 
-    # Ask the user for a question via `st.text_area`.
-    question = st.text_area(
-        "Now ask a question about the document!",
-        placeholder="Can you give me a short summary?",
-        disabled=not uploaded_file,
+    # Sidebar options for summarization formats
+    st.sidebar.title("Choose Summary Format")
+    summary_options = st.sidebar.radio(
+        "Select a format for summarizing the document:",
+        (
+            "Summarize the document in 100 words",
+            "Summarize the document in 2 connecting paragraphs",
+            "Summarize the document in 5 bullet points"
+        ),
     )
 
-    if uploaded_file and question:
+    # Checkbox for model selection
+    use_advanced_model = st.sidebar.checkbox("Use Advanced Model")
+    
+    # Select model based on checkbox status
+    model = "gpt-4o" if use_advanced_model else "gpt-4o-mini"
 
-        # Process the uploaded file and question.
+    if uploaded_file:
+
+        # Process the uploaded file
         document = uploaded_file.read().decode()
+
+        # Instruction based on user selection
+        instruction = f"Summarize the document in {summary_options.lower()}."
+
+        # Prepare the messages for the LLM
         messages = [
             {
                 "role": "user",
-                "content": f"Here's a document: {document} \n\n---\n\n {question}",
+                "content": f"Here's a document: {document} \n\n---\n\n {instruction}",
             }
         ]
 
-        # Generate an answer using the OpenAI API.
+        # Generate the summary using the OpenAI API.
         stream = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=model,
             messages=messages,
             stream=True,
         )
 
         # Stream the response to the app using `st.write_stream`.
         st.write_stream(stream)
+
+    # # Ask the user for a question via `st.text_area`.
+    # question = st.text_area(
+    #     "Now ask a question about the document!",
+    #     placeholder="Can you give me a short summary?",
+    #     disabled=not uploaded_file,
+    # )
+
+    # if uploaded_file and question:
+
+    #     # Process the uploaded file and question.
+    #     document = uploaded_file.read().decode()
+    #     messages = [
+    #         {
+    #             "role": "user",
+    #             "content": f"Here's a document: {document} \n\n---\n\n {question}",
+    #         }
+    #     ]
+
+    #     # Generate an answer using the OpenAI API.
+    #     stream = client.chat.completions.create(
+    #         model="gpt-4o-mini",
+    #         messages=messages,
+    #         stream=True,
+    #     )
+
+    #     # Stream the response to the app using `st.write_stream`.
+    #     st.write_stream(stream)
