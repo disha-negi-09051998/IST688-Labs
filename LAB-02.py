@@ -27,7 +27,7 @@ else:
         "Upload a document (.txt or .md)", type=("txt", "md")
     )
 
-    # Sidebar options for summarization formats
+    # Sidebar options for summarizing 
     st.sidebar.title("Choose Summary Format")
     summary_options = st.sidebar.radio(
         "Select a format for summarizing the document:",
@@ -38,10 +38,10 @@ else:
         ),
     )
 
-    # Checkbox for model selection
+    # Checkbox for different model selection
     use_advanced_model = st.sidebar.checkbox("Use Advanced Model")
     
-    # Select model based on checkbox status
+    # Select the model based on checkbox status
     model = "gpt-4o" if use_advanced_model else "gpt-4o-mini"
 
     if uploaded_file:
@@ -49,7 +49,7 @@ else:
         # Process the uploaded file
         document = uploaded_file.read().decode()
 
-        # Instruction based on user selection
+        # Instruction based on user selection on the sidebar menu
         instruction = f"Summarize the document in {summary_options.lower()}."
 
         # Prepare the messages for the LLM
