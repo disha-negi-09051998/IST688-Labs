@@ -1,52 +1,97 @@
 import streamlit as st
 from openai import OpenAI
 
-# Set up the title and sidebar for model selection
-st.title("My Lab3 Question Answering Chatbot")
+# Show title and description.
+st.title("LAB-02-Disha Negi📄 Document question answering and Chatbot")
+st.write(
+    "Upload a document below and ask a question about it – GPT will answer! "
+    "You can also interact with the chatbot. "
+    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
+)
 
-openAI_model = st.sidebar.selectbox("Which Model?", ("mini", "regular"))
+# Fetch the OpenAI API key from Streamlit secrets
+openai_api_key = st.secrets["openai_api_key"]
 
-if openAI_model == "mini":
-    model_to_use = "gpt-4o-mini"
+if not openai_api_key:
+    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
-    model_to_use = "gpt-4o"
+    # Create an OpenAI client
+    client = OpenAI(api_key=openai_api_key)
 
-# Create an OpenAI client
-if 'client' not in st.session_state:
-    api_key = st.secrets["openai_api_key"]
-    st.session_state.client = OpenAI(api_key=api_key)
+    # Let the user upload a file via `st.file_uploader`.
+    uploaded_file = st.file_uploader("Upload a document (.txt or .md)", type=("txt", "md"))
 
-# Set up the session state to hold messages
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        {"role": "assistant", "content": "How can I help you?"}
-    ]
+    # Sidebar options for summarizing 
+    st.sidebar.title("Options")
+    
+    # Model selection
+    openAI_model = st.sidebar.selectbox("Choose the GPT Model", ("mini", "regular"))
+    model_to_use = "gpt-4o-mini" if openAI_model == "mini" else "gpt-4o"
 
-# Display the messages in chat format
-for msg in st.session_state.messages:
-    chat_msg = st.chat_message(msg["role"])
-    chat_msg.write(msg["content"])
-
-# Get user input and send it to the model
-if prompt := st.chat_input("What is up?"):
-    # Append user input to the session state
-    st.session_state.messages.append({"role": "user", "content": prompt})
-
-    # Display the user input in the chat
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # Get the response from OpenAI
-    client = st.session_state.client
-    stream = client.chat.completions.create(
-        model=model_to_use,
-        messages=st.session_state.messages,
-        stream=True
+    # Summary options
+    summary_options = st.sidebar.radio(
+        "Select a format for summarizing the document:",
+        (
+            "Summarize the document in 100 words",
+            "Summarize the document in 2 connecting paragraphs",
+            "Summarize the document in 5 bullet points"
+        ),
     )
 
-    # Display assistant's response as it streams
-    with st.chat_message("assistant"):
-        response = st.write_stream(stream)
+    if uploaded_file:
+        # Process the uploaded file
+        document = uploaded_file.read().decode()
 
-    # Append assistant's response to the session state
-    st.session_state.messages.append({"role": "assistant", "content": response})
+        # Instruction based on user selection on the sidebar menu
+        instruction = f"Summarize the document in {summary_options.lower()}."
+
+        # Prepare the messages for the LLM
+        messages = [
+            {
+                "role": "user",
+                "content": f"Here's a document: {document} \n\n---\n\n {instruction}",
+            }
+        ]
+
+        # Generate the summary using the OpenAI API
+        stream = client.chat_completions.create(
+            model=model_to_use,
+            messages=messages,
+            stream=True,
+        )
+
+        # Stream the summary response to the app
+        st.write_stream(stream)
+
+    # Set up the session state to hold chatbot messages
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
+    # Display the chatbot conversation
+    st.write("## Chatbot Interaction")
+    for msg in st.session_state.messages:
+        chat_msg = st.chat_message(msg["role"])
+        chat_msg.write(msg["content"])
+
+    # Get user input for the chatbot
+    if prompt := st.chat_input("Ask the chatbot a question or interact:"):
+        # Append user input to the session state
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # Display the user input in the chat
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Generate a response from OpenAI using the same model
+        stream = client.chat_completions.create(
+            model=model_to_use,
+            messages=st.session_state.messages,
+            stream=True,
+        )
+
+        # Stream the assistant's response
+        with st.chat_message("assistant"):
+            response = st.write_stream(stream)
+
+        # Append the assistant's response to the session state
+        st.session_state.messages.append({"role": "assistant", "content": response})
