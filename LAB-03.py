@@ -2,7 +2,7 @@ import streamlit as st
 from openai import OpenAI
 
 # Show title and description.
-st.title("LAB-02-Disha Negi📄 Document question answering and Chatbot")
+st.title("LAB 03 -- Disha Negi 📄 Document question answering and Chatbot")
 st.write(
     "Upload a document below and ask a question about it – GPT will answer! "
     "You can also interact with the chatbot. "
@@ -18,7 +18,7 @@ else:
     # Create an OpenAI client
     client = OpenAI(api_key=openai_api_key)
 
-    # Let the user upload a file via `st.file_uploader`.
+    # Let the user upload a file via ⁠ st.file_uploader ⁠.
     uploaded_file = st.file_uploader("Upload a document (.txt or .md)", type=("txt", "md"))
 
     # Sidebar options for summarizing 
@@ -33,7 +33,7 @@ else:
         "Select a format for summarizing the document:",
         (
             "Summarize the document in 100 words",
-            "Summarize the document in 2 connecting paragraphs",
+            "Summarize the document in detailed format",
             "Summarize the document in 5 bullet points"
         ),
     )
@@ -75,7 +75,7 @@ else:
     def manage_conversation_buffer():
         """Ensure the conversation buffer size does not exceed the limit."""
         if len(st.session_state.chat_history) > conversation_buffer_size:
-            # Keep only the last `conversation_buffer_size` messages
+            # Keep only the last ⁠ conversation_buffer_size ⁠ messages
             st.session_state.chat_history = st.session_state.chat_history[-conversation_buffer_size:]
 
     # Display the chatbot conversation
