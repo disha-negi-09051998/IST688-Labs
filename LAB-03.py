@@ -54,7 +54,7 @@ else:
         ]
 
         # Generate the summary using the OpenAI API
-        stream = client.chat_completions.create(
+        stream = client.chat.completions.create(
             model=model_to_use,
             messages=messages,
             stream=True,
@@ -63,29 +63,43 @@ else:
         # Stream the summary response to the app
         st.write_stream(stream)
 
-    # Set up the session state to hold chatbot messages
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+    # Set up the session state to hold chatbot messages with a buffer limit
+    if "chat_history" not in st.session_state:
+        st.session_state["chat_history"] = [
+            {"role": "assistant", "content": "How can I help you?"}
+        ]
+
+    # Define the conversation buffer size (2 user messages and 2 responses)
+    conversation_buffer_size = 4  # 2 user messages + 2 assistant responses
+
+    def manage_conversation_buffer():
+        """Ensure the conversation buffer size does not exceed the limit."""
+        if len(st.session_state.chat_history) > conversation_buffer_size:
+            # Keep only the last `conversation_buffer_size` messages
+            st.session_state.chat_history = st.session_state.chat_history[-conversation_buffer_size:]
 
     # Display the chatbot conversation
     st.write("## Chatbot Interaction")
-    for msg in st.session_state.messages:
+    for msg in st.session_state.chat_history:
         chat_msg = st.chat_message(msg["role"])
         chat_msg.write(msg["content"])
 
     # Get user input for the chatbot
     if prompt := st.chat_input("Ask the chatbot a question or interact:"):
-        # Append user input to the session state
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        # Append the user input to the session state
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
 
         # Display the user input in the chat
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # Ensure the conversation buffer size does not exceed the limit
+        manage_conversation_buffer()
+
         # Generate a response from OpenAI using the same model
-        stream = client.chat_completions.create(
+        stream = client.chat.completions.create(
             model=model_to_use,
-            messages=st.session_state.messages,
+            messages=st.session_state.chat_history,
             stream=True,
         )
 
@@ -94,4 +108,7 @@ else:
             response = st.write_stream(stream)
 
         # Append the assistant's response to the session state
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+        # Ensure the conversation buffer size does not exceed the limit
+        manage_conversation_buffer()
