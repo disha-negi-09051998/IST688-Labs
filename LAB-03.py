@@ -1,11 +1,14 @@
 import streamlit as st
 from openai import OpenAI
 import tiktoken  # Tokenizer from OpenAI
+import fitz  # PyMuPDF for reading PDFs
 
 # Set a maximum token limit for the buffer (you can adjust this based on your needs).
 max_tokens = 2048
 
 # Function to calculate tokens for a message using OpenAI tokenizer
+
+
 def calculate_token_count(messages, model_name="gpt-4o"):
     encoding = tiktoken.encoding_for_model(model_name)
     total_tokens = 0
@@ -14,6 +17,8 @@ def calculate_token_count(messages, model_name="gpt-4o"):
     return total_tokens
 
 # Truncate conversation history to fit within max_tokens
+
+
 def truncate_messages_by_tokens(messages, max_tokens, model_name="gpt-4o"):
     encoding = tiktoken.encoding_for_model(model_name)
     total_tokens = 0
@@ -44,6 +49,21 @@ def truncate_messages_by_tokens(messages, max_tokens, model_name="gpt-4o"):
     return truncated_messages, total_tokens
 
 
+# Function to read PDF file using PyMuPDF (fitz)
+
+def read_pdf(file):
+    try:
+        pdf_document = fitz.open(stream=file.read(), filetype="pdf")
+        text = ""
+        for page_num in range(pdf_document.page_count):
+            page = pdf_document[page_num]
+            text += page.get_text()
+        return text
+    except Exception as e:
+        st.error(f"Error reading PDF: {e}")
+        return None
+
+
 # Show title and description.
 st.title("LAB 03 -- Disha Negi 📄 Document question answering and Chatbot")
 st.write(
@@ -63,7 +83,7 @@ else:
 
     # Let the user upload a file via ⁠ st.file_uploader ⁠.
     uploaded_file = st.file_uploader(
-        "Upload a document (.txt or .md)", type=("txt", "md"))
+        "Upload a document (.txt or .pdf)", type=("txt", "pdf"))
 
     # Sidebar options for summarizing
     st.sidebar.title("Options")
@@ -84,8 +104,13 @@ else:
     )
 
     if uploaded_file:
-        # Process the uploaded file
-        document = uploaded_file.read().decode()
+        # Process the uploaded file based on its type
+        file_extension = uploaded_file.name.split('.')[-1]
+        document = None
+        if file_extension == 'txt':
+            document = uploaded_file.read().decode()
+        elif file_extension == 'pdf':
+            document = read_pdf(uploaded_file)
 
         # Instruction based on user selection on the sidebar menu
         instruction = f"Summarize the document in {summary_options.lower()}."
@@ -138,7 +163,8 @@ if prompt := st.chat_input("Ask the chatbot a question or interact:"):
     # Generate a response from OpenAI using the same model with a simple and concise prompt
     simple_prompt = f"Answer in a way that a 10-year-old can understand: {prompt}"
     messages_for_gpt = st.session_state.chat_history.copy()
-    messages_for_gpt[-1]['content'] = simple_prompt  # Replace the latest user message with the simplified prompt
+    # Replace the latest user message with the simplified prompt
+    messages_for_gpt[-1]['content'] = simple_prompt
 
     stream = client.chat.completions.create(
         model=model_to_use,
@@ -158,7 +184,8 @@ if prompt := st.chat_input("Ask the chatbot a question or interact:"):
     if "yes" in prompt.lower():
         # If the user says "yes," provide more info and ask again
         st.session_state.chat_history.append(
-            {"role": "assistant", "content": "Here's more information. Do you want more info?"}
+            {"role": "assistant",
+                "content": "Here's more information. Do you want more info?"}
         )
         with st.chat_message("assistant"):
             st.markdown("Here's more information. Do you want more info?")
