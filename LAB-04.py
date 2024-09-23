@@ -84,7 +84,7 @@ collection = create_lab4_collection()
 
 if collection:
     # Topic selection in the sidebar
-    topic = st.sidebar.selectbox("Choose a topic to search", ["Generative AI", "Text Mining", "Data Science Overview"])
+    topic = st.sidebar.selectbox("Choose a topic to search", ["Financial Management Concepts", "Text Mining", "Data Science Overview"])
 
     # Button to trigger the search
     if st.sidebar.button('Search'):
