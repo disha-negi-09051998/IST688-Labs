@@ -99,18 +99,19 @@ User Question: {query}
 Answer:"""
 
     try:
-        # Generate response using OpenAI's chat completion
-        response = st.session_state.openai_client.chat.completions.create(
-            model="gpt-4o",
+        # Generate streaming response using OpenAI's chat completion
+        response_stream = st.session_state.openai_client.chat.completions.create(
+            model="gpt-4o",  # Using the latest GPT-4 model
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            stream=True  # Enable streaming
         )
-        return response.choices[0].message.content
+        return response_stream
     except Exception as e:
         st.error(f"Error getting chatbot response: {str(e)}")
-        return "I'm sorry, I encountered an error while processing your request."
+        return None
 
 # Initialize session state for chat history, system readiness, and collection
 if 'chat_history' not in st.session_state:
@@ -164,16 +165,22 @@ if st.session_state.system_ready and st.session_state.collection:
         relevant_texts, relevant_docs = query_vector_db(st.session_state.collection, user_input)
         context = "\n".join(relevant_texts)
 
-        # Get chatbot response
-        response = get_chatbot_response(user_input, context)
+        # Get streaming chatbot response
+        response_stream = get_chatbot_response(user_input, context)
 
         # Display AI response
         with st.chat_message("assistant"):
-            st.markdown(response)
+            response_placeholder = st.empty()
+            full_response = ""
+            for chunk in response_stream:
+                if chunk.choices[0].delta.content is not None:
+                    full_response += chunk.choices[0].delta.content
+                    response_placeholder.markdown(full_response + "▌")
+            response_placeholder.markdown(full_response)
 
         # Add to chat history (new format)
         st.session_state.chat_history.append({"role": "user", "content": user_input})
-        st.session_state.chat_history.append({"role": "assistant", "content": response})
+        st.session_state.chat_history.append({"role": "assistant", "content": full_response})
 
         # Display relevant documents
         with st.expander("Relevant documents used"):
