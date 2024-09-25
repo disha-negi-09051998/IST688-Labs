@@ -1,4 +1,3 @@
-import chromadb
 import sys
 import streamlit as st
 from openai import OpenAI
@@ -9,6 +8,7 @@ import os
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
+import chromadb
 
 # Function to ensure the OpenAI client is initialized
 
@@ -81,8 +81,6 @@ def create_lab4_collection():
     return st.session_state.Lab4_vectorDB
 
 # Function to query the vector database
-
-
 def query_vector_db(collection, query):
     ensure_openai_client()
     try:
